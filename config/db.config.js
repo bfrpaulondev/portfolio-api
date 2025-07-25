@@ -7,6 +7,6 @@
  */
 
 module.exports = {
-  mongoURI: process.env.MONGODB_URI || "mongodb://localhost:27017/portfolio_db",
+  mongoURI: process.env.MONGODB_URI || "mongodb+srv://paulonbruno9:b6dzdF7VguSs2PyW@cluster0.zz2wbag.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
 };
 
