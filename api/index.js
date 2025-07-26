@@ -1,7 +1,6 @@
 /**
- * @file server.js
- * @description Main server file for the Portfolio API.
- * This file sets up the Express application, connects to the database, and defines API routes.
+ * @file api/index.js
+ * @description Vercel serverless function entry point for the Portfolio API.
  * @author Bruno Paulon
  * @version 1.0.0
  */
@@ -11,17 +10,21 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 
+// Swagger Documentation Setup
+const swaggerUi = require("swagger-ui-express");
+const swaggerJsdoc = require("swagger-jsdoc");
+
 // Import configuration
-const dbConfig = require("./config/db.config");
+const dbConfig = require("../config/db.config");
 
 const app = express();
 
 // Import Routes
-const profileRoutes = require("./routes/profileRoutes");
-const serviceRoutes = require("./routes/serviceRoutes");
-const projectRoutes = require("./routes/projectRoutes");
-const technologyRoutes = require("./routes/technologyRoutes");
-const contactRoutes = require("./routes/contactRoutes");
+const profileRoutes = require("../routes/profileRoutes");
+const serviceRoutes = require("../routes/serviceRoutes");
+const projectRoutes = require("../routes/projectRoutes");
+const technologyRoutes = require("../routes/technologyRoutes");
+const contactRoutes = require("../routes/contactRoutes");
 
 // Middleware
 app.use(express.json()); // Parse JSON request bodies
@@ -42,34 +45,6 @@ mongoose.connect(dbConfig.mongoURI, {
 .then(() => console.log("MongoDB connected successfully."))
 .catch((err) => console.error("MongoDB connection error:", err));
 
-// Basic route for API root
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Welcome to Bruno Paulon's Portfolio API!",
-    version: "1.0.0",
-    documentation: "http://localhost:5000/api-docs",
-  });
-});
-
-// Error handling middleware (optional, but good practice)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Something broke!");
-});
-
-// Start the server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
-
-
-
-// Swagger Documentation Setup
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
-
 const swaggerOptions = {
   swaggerDefinition: {
     openapi: "3.0.0",
@@ -84,8 +59,8 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: "http://localhost:5000",
-        description: "Development server",
+        url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5000",
+        description: "Production server",
       },
     ],
   },
@@ -95,4 +70,20 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
+// Basic route for API root
+app.get("/", (req, res) => {
+  res.status(200).json({
+    message: "Welcome to Bruno Paulon's Portfolio API!",
+    version: "1.0.0",
+    documentation: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}/api-docs` : "http://localhost:5000/api-docs",
+  });
+});
+
+// Error handling middleware (optional, but good practice)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).send("Something broke!");
+});
+
+module.exports = app;
 
