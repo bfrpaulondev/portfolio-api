@@ -78,7 +78,12 @@ const swaggerUiOptions = {
   },
 };
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, { explorer: true }));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  explorer: true,
+  customCssUrl: "/api-docs/swagger-ui.css",
+  customJs: "/api-docs/swagger-ui-bundle.js",
+  customJsStr: "/api-docs/swagger-ui-standalone-preset.js"
+}));
 
 // Basic route for API root
 app.get("/", (req, res) => {
