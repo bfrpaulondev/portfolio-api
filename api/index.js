@@ -59,23 +59,38 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:5000",
+        url: "https://portfolio-api-nine-tau.vercel.app",
         description: "Production server",
       },
     ],
   },
-  apis: ["./routes/*.js", "./controllers/*.js"], // Path to the API docs
+  apis: ["../routes/*.js", "../controllers/*.js"], // Path to the API docs
 };
 
 const swaggerDocs = swaggerJsdoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Swagger UI configuration for Vercel
+const swaggerUiOptions = {
+  explorer: true,
+  swaggerOptions: {
+    url: null,
+    spec: swaggerDocs,
+  },
+};
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  explorer: true,
+  customCssUrl: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui.css",
+  customJs: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui-bundle.js",
+  customJsStr: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui-standalone-preset.js"
+}));
 
 // Basic route for API root
 app.get("/", (req, res) => {
   res.status(200).json({
     message: "Welcome to Bruno Paulon's Portfolio API!",
     version: "1.0.0",
-    documentation: process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}/api-docs` : "http://localhost:5000/api-docs",
+    documentation: "https://portfolio-api-nine-tau.vercel.app/api-docs",
   });
 });
 
