@@ -78,12 +78,7 @@ const swaggerUiOptions = {
   },
 };
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
-  explorer: true,
-  customCssUrl: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui.css",
-  customJs: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui-bundle.js",
-  customJsStr: "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.17.1/swagger-ui-standalone-preset.js"
-}));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, { explorer: true }));
 
 // Basic route for API root
 app.get("/", (req, res) => {
