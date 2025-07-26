@@ -29,7 +29,7 @@ exports.sendContactEmail = async (req, res) => {
 
   try {
     // Create transporter (using environment variables for configuration)
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST || "smtp.mailtrap.io",
       port: process.env.EMAIL_PORT || 2525,
       secure: process.env.EMAIL_SECURE === "true",
