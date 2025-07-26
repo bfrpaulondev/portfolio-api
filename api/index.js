@@ -78,7 +78,13 @@ const swaggerUiOptions = {
     spec: swaggerDocs,
   },
 };
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
+  explorer: true,
+  customCssUrl: "/swagger-ui-dist/swagger-ui.css",
+  customJs: "/swagger-ui-dist/swagger-ui-bundle.js",
+  customJsStr: "/swagger-ui-dist/swagger-ui-standalone-preset.js"
+}));
+app.use("/swagger-ui-dist", express.static(path.join(__dirname, "../node_modules/swagger-ui-dist")));
 
 
 // Basic route for API root
