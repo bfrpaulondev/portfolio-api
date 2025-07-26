@@ -9,6 +9,7 @@ require("dotenv").config(); // Load environment variables from .env file
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
+const path = require("path");
 
 // Swagger Documentation Setup
 const swaggerUi = require("swagger-ui-express");
@@ -77,13 +78,8 @@ const swaggerUiOptions = {
     spec: swaggerDocs,
   },
 };
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
-  explorer: true,
-  customCssUrl: "/api-docs/swagger-ui.css",
-  customJs: "/api-docs/swagger-ui-bundle.js",
-  customJsStr: "/api-docs/swagger-ui-standalone-preset.js"
-}));
 
 // Basic route for API root
 app.get("/", (req, res) => {
