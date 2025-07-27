@@ -1,5 +1,4 @@
-/**
- * @file routes/profileRoutes.js
+/** * @file routes/profileRoutes.js
  * @description Express routes for profile-related endpoints.
  * Defines API routes for profile management.
  * @author Bruno Paulon
@@ -99,5 +98,3 @@ router.get("/", getProfile);
 router.post("/", createOrUpdateProfile);
 
 module.exports = router;
-
-
