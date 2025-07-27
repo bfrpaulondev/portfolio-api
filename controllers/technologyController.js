@@ -1,50 +1,26 @@
-/**
- * @file controllers/technologyController.js
- * @description Controller for handling technology-related API requests.
- * Provides logic for managing technologies and tools.
- * @author Bruno Paulon
- * @version 1.0.0
- */
-
 const Technology = require("../models/Technology");
 
-/**
- * @swagger
- * /api/technologies:
- *   get:
- *     summary: Get all active technologies
- *     tags:
- *       - Technologies
- *     responses:
- *       200:
- *         description: Successfully retrieved all technologies
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   name:
- *                     type: string
- *                   category:
- *                     type: string
- *                   icon:
- *                     type: string
- *                   active:
- *                     type: boolean
- *       500:
- *         description: Server error
- */
-// @route GET /api/technologies
-// @desc Get all active technologies
-// @access Public
+// Obter tecnologias
 exports.getTechnologies = async (request, reply) => {
   try {
     const technologies = await Technology.find({ isActive: true });
-    reply.status(200).send(technologies);
+    return reply.code(200).send(technologies);
   } catch (error) {
-    console.error("Error fetching technologies:", error);
-    reply.status(500).send({ message: "Server error." });
+    console.error("Erro ao obter tecnologias:", error);
+    return reply.code(500).send({ error: "Erro no servidor." });
+  }
+};
+
+// Criar nova tecnologia
+exports.createTechnology = async (request, reply) => {
+  const { name, category, logo, proficiencyLevel, isActive = true } = request.body;
+
+  try {
+    const newTech = new Technology({ name, category, logo, proficiencyLevel, isActive });
+    const tech = await newTech.save();
+    return reply.code(201).send(tech);
+  } catch (error) {
+    console.error("Erro ao criar tecnologia:", error);
+    return reply.code(500).send({ error: "Erro no servidor." });
+  }
+};
