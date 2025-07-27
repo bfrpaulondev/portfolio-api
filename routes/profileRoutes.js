@@ -1,100 +1,54 @@
-/** * @file routes/profileRoutes.js
- * @description Express routes for profile-related endpoints.
- * Defines API routes for profile management.
- * @author Bruno Paulon
- * @version 1.0.0
- */
-
-const express = require("express");
-const router = express.Router();
 const { getProfile, createOrUpdateProfile } = require("../controllers/profileController");
 
-/**
- * @swagger
- * tags:
- *   name: Profile
- *   description: API for managing user profile information
- */
+async function profileRoutes(fastify, opts) {
+  const profileSchema = {
+    type: "object",
+    properties: {
+      _id: { type: "string" },
+      name: { type: "string" },
+      title: { type: "string" },
+      bio: { type: "string" },
+      contactEmail: { type: "string" },
+      linkedin: { type: "string" },
+      github: { type: "string" }
+    }
+  };
 
-/**
- * @swagger
- * /api/profile:
- *   get:
- *     summary: Get profile information
- *     tags:
- *       - Profile
- *     responses:
- *       200:
- *         description: Successfully retrieved profile information
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 name:
- *                   type: string
- *                 title:
- *                   type: string
- *                 bio:
- *                   type: string
- *                 contactEmail:
- *                   type: string
- *                 linkedin:
- *                   type: string
- *                 github:
- *                   type: string
- *       404:
- *         description: Profile not found
- *       500:
- *         description: Server error
- */
-// @route GET /api/profile
-// @desc Get profile information
-// @access Public
-router.get("/", getProfile);
+  const profileInput = {
+    type: "object",
+    required: ["name", "title"],
+    properties: {
+      name: { type: "string" },
+      title: { type: "string" },
+      bio: { type: "string" },
+      contactEmail: { type: "string" },
+      linkedin: { type: "string" },
+      github: { type: "string" }
+    }
+  };
 
-/**
- * @swagger
- * /api/profile:
- *   post:
- *     summary: Create or update profile information
- *     tags:
- *       - Profile
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               title:
- *                 type: string
- *               bio:
- *                 type: string
- *               contactEmail:
- *                 type: string
- *               linkedin:
- *                 type: string
- *               github:
- *                 type: string
- *             example:
- *               name: "Bruno Paulon"
- *               title: "Full Stack Developer"
- *               bio: "Experienced developer with a passion for building scalable web applications."
- *               contactEmail: "bruno.paulon@example.com"
- *               linkedin: "https://www.linkedin.com/in/brunopaulon"
- *               github: "https://github.com/bfrpaulondev"
- *     responses:
- *       200:
- *         description: Profile created or updated successfully
- *       500:
- *         description: Server error
- */
-// @route POST /api/profile
-// @desc Create or update profile information
-// @access Private (admin only, implement authentication later)
-router.post("/", createOrUpdateProfile);
+  fastify.get("/", {
+    schema: {
+      tags: ["Profile"],
+      summary: "Obter perfil do portfólio",
+      response: {
+        200: profileSchema,
+        404: { type: "object", properties: { error: { type: "string" } } }
+      }
+    }
+  }, getProfile);
 
-module.exports = router;
+  fastify.post("/", {
+    schema: {
+      tags: ["Profile"],
+      summary: "Criar ou atualizar perfil",
+      body: profileInput,
+      response: {
+        200: profileSchema,
+        201: profileSchema
+      }
+    }
+  }, createOrUpdateProfile);
+}
+
+module.exports = profileRoutes;
