@@ -1,151 +1,121 @@
 /**
- * @file controllers/profileController.js
- * @description Controller for handling profile-related API requests.
- * Provides logic for fetching and updating profile information.
+ * @file controllers/projectController.js
+ * @description Controller for handling project-related API requests.
+ * Provides logic for managing portfolio projects.
  * @author Bruno Paulon
  * @version 1.0.0
  */
 
-const Profile = require("../models/Profile");
+const Project = require("../models/Project");
 
-/**
- * @swagger
- * /api/profile:
- *   get:
- *     summary: Get profile information
- *     tags:
- *       - Profile
- *     responses:
- *       200:
- *         description: Successfully retrieved profile information
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 name:
- *                   type: string
- *                 title:
- *                   type: string
- *                 bio:
- *                   type: string
- *                 contactEmail:
- *                   type: string
- *                 linkedin:
- *                   type: string
- *                 github:
- *                   type: string
- *       404:
- *         description: Profile not found
- *       500:
- *         description: Server error
- */
-// @route GET /api/profile
-// @desc Get profile information
+// @route GET /api/projects
+// @desc Get all active projects
 // @access Public
-exports.getProfile = async (req, res) => {
+exports.getProjects = async (request, reply) => {
   try {
-    const profile = await Profile.findOne();
-    if (!profile) {
-      return res.status(404).json({ message: "Profile not found." });
-    }
-    res.status(200).json(profile);
+    const projects = await Project.find({ isActive: true });
+    return reply.status(200).send(projects);
   } catch (error) {
-    console.error("Error fetching profile:", error);
-    res.status(500).json({ message: "Server error." });
+    console.error("Error fetching projects:", error);
+    return reply.status(500).send({ error: "Server error." });
   }
 };
 
-/**
- * @swagger
- * /api/profile:
- *   post:
- *     summary: Create or update profile information
- *     tags:
- *       - Profile
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               title:
- *                 type: string
- *               bio:
- *                 type: string
- *               contactEmail:
- *                 type: string
- *               linkedin:
- *                 type: string
- *               github:
- *                 type: string
- *             example:
- *               name: "Bruno Paulon"
- *               title: "Full Stack Developer"
- *               bio: "Experienced developer with a passion for building scalable web applications."
- *               contactEmail: "bruno.paulon@example.com"
- *               linkedin: "https://www.linkedin.com/in/brunopaulon"
- *               github: "https://github.com/bfrpaulondev"
- *     responses:
- *       200:
- *         description: Profile created or updated successfully
- *       500:
- *         description: Server error
- */
-// @route POST /api/profile
-// @desc Create or update profile information
+// @route GET /api/projects/:id
+// @desc Get a single project by ID
+// @access Public
+exports.getProjectById = async (request, reply) => {
+  try {
+    const project = await Project.findById(request.params.id);
+    if (!project) {
+      return reply.status(404).send({ error: "Project not found." });
+    }
+    return reply.status(200).send(project);
+  } catch (error) {
+    console.error("Error fetching project:", error);
+    return reply.status(500).send({ error: "Server error." });
+  }
+};
+
+// @route GET /api/projects/category/:category
+// @desc Get projects by category
+// @access Public
+exports.getProjectsByCategory = async (request, reply) => {
+  try {
+    const projects = await Project.find({ 
+      category: request.params.category, 
+      isActive: true 
+    });
+    return reply.status(200).send(projects);
+  } catch (error) {
+    console.error("Error fetching projects by category:", error);
+    return reply.status(500).send({ error: "Server error." });
+  }
+};
+
+// @route POST /api/projects
+// @desc Create a new project
 // @access Private (admin only, implement authentication later)
-exports.createOrUpdateProfile = async (req, res) => {
-  const {
-    name,
-    title,
-    bio,
-    email,
-    phone,
-    location,
-    yearsOfExperience,
-    projectsCompleted,
-    certifications,
-    awards,
-  } = req.body;
-
-  const profileFields = {
-    name,
-    title,
-    bio,
-    email,
-    phone,
-    location,
-    yearsOfExperience,
-    projectsCompleted,
-    certifications,
-    awards,
-  };
+exports.createProject = async (request, reply) => {
+  const { title, description, category, imageUrl, projectUrl, active } = request.body;
 
   try {
-    let profile = await Profile.findOne();
+    const newProject = new Project({
+      title,
+      description,
+      category,
+      imageUrl,
+      projectUrl,
+      active,
+    });
 
-    if (profile) {
-      // Update
-      profile = await Profile.findOneAndUpdate(
-        {},
-        { $set: profileFields },
-        { new: true, upsert: true }
-      );
-      return res.status(200).json(profile);
-    } else {
-      // Create
-      profile = new Profile(profileFields);
-      await profile.save();
-      return res.status(201).json(profile);
-    }
+    const project = await newProject.save();
+    return reply.status(201).send(project);
   } catch (error) {
-    console.error("Error creating or updating profile:", error);
-    res.status(500).json({ message: "Server error." });
+    console.error("Error creating project:", error);
+    return reply.status(500).send({ error: "Server error." });
   }
 };
 
+// @route PUT /api/projects/:id
+// @desc Update a project
+// @access Private (admin only, implement authentication later)
+exports.updateProject = async (request, reply) => {
+  const { title, description, category, imageUrl, projectUrl, active } = request.body;
+
+  try {
+    const project = await Project.findByIdAndUpdate(
+      request.params.id,
+      { title, description, category, imageUrl, projectUrl, active },
+      { new: true }
+    );
+
+    if (!project) {
+      return reply.status(404).send({ error: "Project not found." });
+    }
+
+    return reply.status(200).send(project);
+  } catch (error) {
+    console.error("Error updating project:", error);
+    return reply.status(500).send({ error: "Server error." });
+  }
+};
+
+// @route DELETE /api/projects/:id
+// @desc Delete a project
+// @access Private (admin only, implement authentication later)
+exports.deleteProject = async (request, reply) => {
+  try {
+    const project = await Project.findByIdAndDelete(request.params.id);
+
+    if (!project) {
+      return reply.status(404).send({ error: "Project not found." });
+    }
+
+    return reply.status(200).send({ message: "Project deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    return reply.status(500).send({ error: "Server error." });
+  }
+};
 
