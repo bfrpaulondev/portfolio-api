@@ -1,129 +1,247 @@
-# 📆 Portfolio API (Fastify) · Private Repo
+# 📦 Portfolio API (Fastify) — Private Repository
 
-API pessoal desenvolvida para alimentar o meu portfólio. Esta aplicação foi construída com foco em performance, estrutura profissional e documentação automatizada via Swagger.
+A modern, fast, and well-documented API for a personal portfolio. Built with **Fastify**, **MongoDB (Mongoose)**, and **Swagger UI**, ready for **local development** and **Vercel serverless** deployment. Includes a **contact** endpoint that sends emails via **Gmail (Nodemailer)** using an **App Password**.
 
-> ⚠️ Este repositório é privado e serve como backend da minha aplicação de portfólio pessoal.
-
----
-
-## 🚀 Tecnologias Utilizadas
-
-* [Fastify](https://www.fastify.dev/) - Web framework rápido e minimalista
-* [MongoDB Atlas](https://www.mongodb.com/cloud/atlas) - Banco de dados NoSQL na nuvem
-* [Mongoose](https://mongoosejs.com/) - ODM para MongoDB
-* [Swagger](https://swagger.io/) + [@fastify/swagger-ui](https://github.com/fastify/fastify-swagger) - Documentação de API
-* [Vercel](https://vercel.com/) - Deploy Serverless
-* [dotenv](https://www.npmjs.com/package/dotenv) - Gerenciamento de variáveis ambiente
+> This repository is private. Use it as the backend for a portfolio frontend or any personal site.
 
 ---
 
-## 📂 Estrutura do Projeto
+## ✨ Features
+
+- Fast HTTP server with **Fastify**
+- **MongoDB** persistence via **Mongoose**
+- **Swagger UI** at `/api-docs`
+- **Serverless entry** for Vercel at `api/index.js`
+- **Email sending** via Gmail (Nodemailer + App Password)
+- JSON Schema validation on routes
+- Clean controller/service structure
+- CORS enabled
+
+---
+
+## 🧱 Tech Stack
+
+- Node.js, Fastify, @fastify/swagger, @fastify/swagger-ui, @fastify/cors
+- MongoDB Atlas, Mongoose
+- Nodemailer (SMTP Gmail)
+- dotenv
+
+---
+
+## 📂 Project Structure
 
 ```
 .
-├── api/
-│   └── index.js           # Função serverless da Vercel (Fastify + Swagger)
-├── config/
-│   └── db.config.js       # String de conexão MongoDB
-├── controllers/           # Lógica das rotas
-├── models/                # Esquemas Mongoose
-├── routes/                # Plugins Fastify com validações e Swagger
-├── server.js              # Ponto de entrada local para testes
-└── .env                   # Variáveis de ambiente (não versionado)
+├─ api/
+│  └─ index.js               # Vercel serverless handler (Fastify + routes + Swagger)
+├─ config/
+│  └─ db.config.js           # Mongo URI configuration
+├─ controllers/              # Business logic per resource
+├─ models/                   # Mongoose schemas
+├─ routes/                   # Fastify plugins (per resource) with JSON Schemas
+├─ server.js                 # Local entry (Fastify + Swagger + Mongo connect)
+└─ .env                      # Environment variables (not committed)
 ```
 
 ---
 
-## 📌 Objetivo
+## 🔐 Environment Variables
 
-Essa API serve como backend para:
+Create `.env` in the repo root:
 
-* Meu site pessoal (portfólio frontend)
-* Página de serviços que eu presto
-* Meus projetos com filtros por categoria
-* Tecnologias que domino
-* Formulário de contato com backend
+```
+# Server
+PORT=3000
 
----
+# MongoDB
+MONGO_URI=mongodb+srv://<user>:<pass>@<cluster>/<db>?retryWrites=true&w=majority
 
-## 📡 Rotas disponíveis
+# Email (Gmail via App Password)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=465
+EMAIL_SECURE=true
+EMAIL_USER=your.gmail.address@gmail.com
+EMAIL_PASS=your-google-app-password
+RECIPIENT_EMAIL=destination@example.com
+```
 
-| Recurso      | Rota base           | Métodos                  |
-| ------------ | ------------------- | ------------------------ |
-| Perfil       | `/api/profile`      | `GET`, `POST`            |
-| Projetos     | `/api/projects`     | `GET`, `GET/:id`, `POST` |
-| Serviços     | `/api/services`     | `GET`, `POST`            |
-| Tecnologias  | `/api/technologies` | `GET`, `POST`            |
-| Contato      | `/api/contact`      | `POST`                   |
-| Swagger Docs | `/api-docs`         | `GET` (interface visual) |
-
----
-
-## 🛠️ Como usar localmente
-
-1. Clone este repositório privado:
-
-   ```bash
-   git clone git@github.com:bfrpaulondev/portfolio-api.git
-   cd portfolio-api
-   ```
-
-2. Instale as dependências:
-
-   ```bash
-   npm install
-   ```
-
-3. Crie o arquivo `.env`:
-
-   ```env
-   MONGO_URI=mongodb+srv://usuario:senha@cluster.mongodb.net/portfolio
-   PORT=3000
-   ```
-
-4. Inicie o servidor local:
-
-   ```bash
-   node server.js
-   ```
-
-5. Acesse:
-
-   * API: `http://localhost:3000/api/profile`
-   * Docs: `http://localhost:3000/api-docs`
+**Notes:**
+- `EMAIL_PASS` must be a **Google App Password** (not your regular Gmail password).
+- Keep `.env` out of git. Ensure `*.env` is in `.gitignore`.
 
 ---
 
-## 🔢 Testando na Vercel
+## ▶️ Run Locally
 
-* O entry point serverless está em `/api/index.js`
-* Swagger funciona em `/api-docs`
-* Sem necessidade de `listen()`, Vercel cuida disso
+1) Install dependencies:
+```bash
+npm install
+```
 
----
-
-## 📁 Anotações internas
-
-* Todas as rotas usam JSON Schema para validação
-* `controllers/` seguem padrão async/await com `reply.code().send()`
-* `models/` usam timestamps automáticos
-* MongoDB via Atlas (free tier)
-* O projeto foi migrado de Express para Fastify
+2) Start the API:
+```bash
+node server.js
+```
+- API base: `http://localhost:${PORT}`
+- Docs: `http://localhost:${PORT}/api-docs`
 
 ---
 
-## 💡 Melhorias futuras
+## 🖥️ Serverless (Vercel)
 
-* [ ] Autenticação com JWT
-* [ ] Painel admin com Next.js
-* [ ] Envio de e-mails com Nodemailer
-* [ ] Testes automatizados com Vitest
-* [ ] Limitação de rate (`@fastify/rate-limit`)
+- Entry file: `api/index.js` (no `listen()` needed)
+- Swagger available at `/api-docs`
+- Set environment variables in **Vercel Project → Settings → Environment Variables**
+
+**Deploy steps (quick):**
+1. Push repo to GitHub (private is fine)
+2. Import project in Vercel
+3. Add env vars (see above)
+4. Deploy
 
 ---
 
-## 👨‍💻 Autor
+## 🔌 Endpoints
 
-> **Bruno Paulon**
-> [LinkedIn](https://www.linkedin.com/in/bruno-paulon)
-> [bfrpaulondev@gmail.com](mailto:bfrpaulondev@gmail.com)
+**Base path:** `/api`
+
+| Resource      | Path                    | Methods |
+|---------------|--------------------------|---------|
+| Profile       | `/profile`               | GET, POST |
+| Projects      | `/projects`              | GET, POST |
+| Projects      | `/projects/:id`          | GET, PUT, DELETE |
+| Projects      | `/projects/category/:c`  | GET |
+| Services      | `/services`              | GET, POST |
+| Technologies  | `/technologies`          | GET, POST |
+| Contact       | `/contact`               | POST |
+| Docs          | `/api-docs`              | GET |
+
+> Long descriptions live in Swagger UI. Keep tables to keywords only.
+
+---
+
+## 📜 Example Requests
+
+**Profile — GET**
+```bash
+curl -s http://localhost:3000/api/profile
+```
+
+**Profile — POST**
+```bash
+curl -X POST http://localhost:3000/api/profile   -H "Content-Type: application/json"   -d '{
+        "name":"Your Name",
+        "title":"Software Engineer",
+        "bio":"About me",
+        "contactEmail":"you@example.com",
+        "linkedin":"https://linkedin.com/in/you",
+        "github":"https://github.com/you"
+      }'
+```
+
+**Projects — POST**
+```bash
+curl -X POST http://localhost:3000/api/projects   -H "Content-Type: application/json"   -d '{
+        "title":"Portfolio Site",
+        "description":"Static site with SSR",
+        "category":"Frontend",
+        "imageUrl":"https://.../img.png",
+        "projectUrl":"https://..."
+      }'
+```
+
+**Contact — POST (sends email via Gmail)**
+```bash
+curl -X POST http://localhost:3000/api/contact   -H "Content-Type: application/json"   -d '{
+        "name":"Visitor",
+        "email":"visitor@example.com",
+        "message":"Hello! Great portfolio."
+      }'
+```
+
+---
+
+## 🧩 Swagger
+
+- Auto-generated by `@fastify/swagger`.
+- UI served by `@fastify/swagger-ui` at `/api-docs`.
+- Route schemas live inside `routes/*.js` near each handler.
+
+---
+
+## ✉️ Email via Gmail (Nodemailer)
+
+**Requirements:**
+- Google Account with **2‑Step Verification** enabled
+- A **Google App Password**
+
+**Steps:**
+- Generate App Password at: https://myaccount.google.com/apppasswords
+- Put it into `.env` as `EMAIL_PASS`
+- Keep `EMAIL_SECURE=true` and port `465`
+
+**Mailer code location:**
+- `utils/mailer.js` sets up the SMTP transport
+- `controllers/contactController.js` imports the transport and sends the message
+
+---
+
+## 🛡️ Security Checklist
+
+- Do **not** commit `.env`
+- Rotate app passwords periodically
+- Validate request payloads (already enforced by JSON Schemas)
+- Limit origins in CORS if needed
+- Harden headers at the reverse proxy (e.g., Vercel defaults are fine)
+
+---
+
+## 🐛 Troubleshooting
+
+- **Mongo connection fails**: Verify `MONGO_URI`, whitelist IPs in Atlas, network access 0.0.0.0/0 for testing.
+- **Swagger UI blank**: Ensure both plugins are registered before routes; check logs.
+- **Gmail SMTP error**: Use **App Password**, not account password; keep `secure=true`, port 465.
+- **CORS issues**: Adjust `@fastify/cors` config to your frontend origin.
+- **Vercel 500**: Confirm env vars on Vercel, and that `api/index.js` exports the async handler.
+
+---
+
+## 🗺️ Maintenance Notes
+
+- Controllers use `reply.code().send()` (Fastify style)
+- Models include `{ timestamps: true }`
+- Routes group schemas near handlers for clarity
+- Serverless handler (`api/index.js`) reuses the same route plugins
+
+---
+
+## 📦 Suggested NPM Scripts (optional)
+
+```json
+{
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  }
+}
+```
+
+> Add ESLint/Prettier configs if needed.
+
+---
+
+## 📌 Roadmap
+
+- JWT auth + admin panel
+- Rate limit
+- Request logging with pino
+- Integration tests (Vitest)
+- HTML email templates
+
+---
+
+## 📄 License
+
+This repository is **private**. All rights reserved.

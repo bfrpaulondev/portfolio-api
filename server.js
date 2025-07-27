@@ -1,60 +1,136 @@
+/**
+ * @file server.js
+ * @description Local entrypoint for the Portfolio API (Fastify + MongoDB + Swagger).
+ * Run: `npm run dev` or `node server.js`
+ */
+
 require("dotenv").config();
+
 const fastify = require("fastify")({ logger: true });
 const mongoose = require("mongoose");
-const path = require("path");
 
-// Plugins
-const fastifySwagger = require("@fastify/swagger");
-const fastifySwaggerUi = require("@fastify/swagger-ui");
-const fastifyCors = require("@fastify/cors");
+const cors = require("@fastify/cors");
+const swagger = require("@fastify/swagger");
+const swaggerUI = require("@fastify/swagger-ui");
 
-// Swagger setup
-fastify.register(fastifySwagger, {
-  swagger: {
+// Fallback local/config
+const { mongoURI: cfgMongoURI } = require("./config/db.config");
+
+// -------------------- Env & constants ---------------------------------------
+const DEFAULT_PORT = Number(process.env.PORT || 3000);
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || ""; // opcional (produção)
+
+// Aceita MONGO_URI novo, MONGODB_URI legado, ou fallback do config
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || cfgMongoURI;
+
+// Log seguro (mascara password)
+const maskedMongo = MONGO_URI
+  ? MONGO_URI.replace(/\/\/([^:]+):([^@]+)@/, "//$1:***@")
+  : "MISSING";
+
+fastify.log.info({ maskedMongo }, "MongoDB target");
+
+// -------------------- Plugins globais (CORS antes) --------------------------
+fastify.register(cors, {
+  origin: true, // em produção, restringe ao teu frontend (ex: https://teu-site.com)
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+});
+
+// Swagger (OpenAPI) — sem `servers` para usar a origem atual automaticamente
+fastify.register(swagger, {
+  openapi: {
+    openapi: "3.0.0",
     info: {
-      title: "Bruno Paulon Portfolio API",
-      description: "Documentação da API do portfólio pessoal",
-      version: "1.0.0"
-    },
-    host: "localhost:3000",
-    schemes: ["http"],
-    consumes: ["application/json"],
-    produces: ["application/json"]
+      title: "Portfolio API",
+      version: "2.0.0",
+      description: "Fastify API for personal portfolio (MongoDB + Swagger)"
+    }
+    // servers omitidos de propósito para não fixar host/porta
   }
 });
 
-fastify.register(fastifySwaggerUi, {
-  routePrefix: "/docs",
-  uiConfig: {
-    docExpansion: "full",
-    deepLinking: false
-  }
+fastify.register(swaggerUI, {
+  routePrefix: "/api-docs",
+  uiConfig: { docExpansion: "list", deepLinking: true },
+  staticCSP: true
 });
 
-// Middleware
-fastify.register(fastifyCors, {
-  origin: "*"
-});
-
-// Routes
+// -------------------- Rotas (Fastify plugins) -------------------------------
 fastify.register(require("./routes/profileRoutes"), { prefix: "/api/profile" });
 fastify.register(require("./routes/projectRoutes"), { prefix: "/api/projects" });
 fastify.register(require("./routes/serviceRoutes"), { prefix: "/api/services" });
 fastify.register(require("./routes/technologyRoutes"), { prefix: "/api/technologies" });
 fastify.register(require("./routes/contactRoutes"), { prefix: "/api/contact" });
 
-// Connect to MongoDB and start server
+// Healthcheck & root
+fastify.get("/health", async () => ({
+  status: "ok",
+  time: new Date().toISOString()
+}));
+
+fastify.get("/", async () => ({
+  message: "Portfolio API (Fastify) is running",
+  docs: "/api-docs"
+}));
+
+// -------------------- Listen com retry automático ---------------------------
+const HOST = "0.0.0.0";
+
+/**
+ * Tenta iniciar o servidor na porta desejada e, se estiver ocupada,
+ * tenta as próximas portas até `attempts` vezes.
+ */
+async function listenWithRetry(app, startPort = DEFAULT_PORT, attempts = 8) {
+  let port = startPort;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      await app.listen({ port, host: HOST });
+      const addr = app.server.address();
+      const finalPort = typeof addr === "object" && addr ? addr.port : port;
+
+      // BASE URL para logs (se tiver PUBLIC_BASE_URL em produção, usa-o)
+      const base =
+        PUBLIC_BASE_URL ||
+        `http://localhost:${finalPort}`;
+
+      app.log.info(`Server listening at ${base}`);
+      app.log.info(`Docs available at ${base}/api-docs`);
+      return;
+    } catch (err) {
+      if (err && err.code === "EADDRINUSE" && i < attempts - 1) {
+        app.log.warn(`Port ${port} in use, trying ${port + 1}...`);
+        port++;
+      } else {
+        throw err;
+      }
+    }
+  }
+}
+
+// -------------------- Bootstrap --------------------------------------------
 const start = async () => {
   try {
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
-    fastify.listen({ port: process.env.PORT || 3000, host: "0.0.0.0" });
+    if (!MONGO_URI) {
+      throw new Error("MongoDB URI missing. Set MONGO_URI (or MONGODB_URI) in .env.");
+    }
+
+    // Driver moderno: não usa mais useNewUrlParser/unifiedTopology
+    await mongoose.connect(MONGO_URI);
+    fastify.log.info("MongoDB connected");
+
+    await listenWithRetry(fastify, DEFAULT_PORT, 8);
   } catch (err) {
-    fastify.log.error(err);
+    fastify.log.error(err, "Fatal error during startup");
     process.exit(1);
   }
 };
+
+// Graceful handling (opcional)
+process.on("unhandledRejection", (reason) => {
+  fastify.log.error({ reason }, "unhandledRejection");
+});
+process.on("uncaughtException", (err) => {
+  fastify.log.error({ err }, "uncaughtException");
+});
 
 start();
