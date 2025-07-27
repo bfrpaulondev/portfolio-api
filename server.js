@@ -13,12 +13,12 @@ const cors = require("@fastify/cors");
 const swagger = require("@fastify/swagger");
 const swaggerUI = require("@fastify/swagger-ui");
 
-// Fallback local/config
 const { mongoURI: cfgMongoURI } = require("./config/db.config");
 
 // -------------------- Env & constants ---------------------------------------
 const DEFAULT_PORT = Number(process.env.PORT || 3000);
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL || ""; // opcional (produção)
+const HOST = "0.0.0.0";
 
 // Aceita MONGO_URI novo, MONGODB_URI legado, ou fallback do config
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || cfgMongoURI;
@@ -32,11 +32,11 @@ fastify.log.info({ maskedMongo }, "MongoDB target");
 
 // -------------------- Plugins globais (CORS antes) --------------------------
 fastify.register(cors, {
-  origin: true, // em produção, restringe ao teu frontend (ex: https://teu-site.com)
+  origin: true, // em produção, restringe ao teu frontend
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 });
 
-// Swagger (OpenAPI) — sem `servers` para usar a origem atual automaticamente
+// Swagger (OpenAPI 3) — sem `servers` para não fixar host/porta
 fastify.register(swagger, {
   openapi: {
     openapi: "3.0.0",
@@ -45,7 +45,7 @@ fastify.register(swagger, {
       version: "2.0.0",
       description: "Fastify API for personal portfolio (MongoDB + Swagger)"
     }
-    // servers omitidos de propósito para não fixar host/porta
+    // servers omitidos de propósito
   }
 });
 
@@ -73,8 +73,10 @@ fastify.get("/", async () => ({
   docs: "/api-docs"
 }));
 
-// -------------------- Listen com retry automático ---------------------------
-const HOST = "0.0.0.0";
+// -------------------- Listen com retry e guarda de reentrada ----------------
+
+// impede chamadas duplicadas ao start/listen no mesmo processo
+let started = false;
 
 /**
  * Tenta iniciar o servidor na porta desejada e, se estiver ocupada,
@@ -88,11 +90,7 @@ async function listenWithRetry(app, startPort = DEFAULT_PORT, attempts = 8) {
       const addr = app.server.address();
       const finalPort = typeof addr === "object" && addr ? addr.port : port;
 
-      // BASE URL para logs (se tiver PUBLIC_BASE_URL em produção, usa-o)
-      const base =
-        PUBLIC_BASE_URL ||
-        `http://localhost:${finalPort}`;
-
+      const base = PUBLIC_BASE_URL || `http://localhost:${finalPort}`;
       app.log.info(`Server listening at ${base}`);
       app.log.info(`Docs available at ${base}/api-docs`);
       return;
@@ -110,13 +108,23 @@ async function listenWithRetry(app, startPort = DEFAULT_PORT, attempts = 8) {
 // -------------------- Bootstrap --------------------------------------------
 const start = async () => {
   try {
+    if (started) {
+      fastify.log.warn("start() called more than once in the same process — ignoring.");
+      return;
+    }
+    started = true;
+
     if (!MONGO_URI) {
       throw new Error("MongoDB URI missing. Set MONGO_URI (or MONGODB_URI) in .env.");
     }
 
-    // Driver moderno: não usa mais useNewUrlParser/unifiedTopology
-    await mongoose.connect(MONGO_URI);
-    fastify.log.info("MongoDB connected");
+    // Conecta ao Mongo apenas se necessário
+    if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(MONGO_URI);
+      fastify.log.info("MongoDB connected");
+    } else {
+      fastify.log.info(`Mongo already connected (state=${mongoose.connection.readyState})`);
+    }
 
     await listenWithRetry(fastify, DEFAULT_PORT, 8);
   } catch (err) {
@@ -125,7 +133,7 @@ const start = async () => {
   }
 };
 
-// Graceful handling (opcional)
+// Tratamento opcional
 process.on("unhandledRejection", (reason) => {
   fastify.log.error({ reason }, "unhandledRejection");
 });
