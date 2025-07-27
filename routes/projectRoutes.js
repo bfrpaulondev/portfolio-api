@@ -1,13 +1,11 @@
 /**
  * @file routes/projectRoutes.js
- * @description Express routes for project-related endpoints.
+ * @description Fastify routes for project-related endpoints.
  * Defines API routes for project management.
  * @author Bruno Paulon
  * @version 1.0.0
  */
 
-const express = require("express");
-const router = express.Router();
 const {
   getProjects,
   getProjectById,
@@ -17,286 +15,258 @@ const {
   deleteProject,
 } = require("../controllers/projectController");
 
-/**
- * @swagger
- * tags:
- *   name: Projects
- *   description: API for managing portfolio projects
- */
+async function projectRoutes(fastify, options) {
+  // Schema definitions for Swagger
+  const projectSchema = {
+    type: "object",
+    properties: {
+      _id: { type: "string" },
+      title: { type: "string" },
+      description: { type: "string" },
+      category: { type: "string" },
+      imageUrl: { type: "string" },
+      projectUrl: { type: "string" },
+      active: { type: "boolean" }
+    }
+  };
 
-/**
- * @swagger
- * /api/projects:
- *   get:
- *     summary: Get all active projects
- *     tags:
- *       - Projects
- *     responses:
- *       200:
- *         description: Successfully retrieved all projects
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   title:
- *                     type: string
- *                   description:
- *                     type: string
- *                   category:
- *                     type: string
- *                   imageUrl:
- *                     type: string
- *                   projectUrl:
- *                     type: string
- *                   active:
- *                     type: boolean
- *       500:
- *         description: Server error
- */
-// @route GET /api/projects
-// @desc Get all active projects
-// @access Public
-router.get("/", getProjects);
+  const projectInputSchema = {
+    type: "object",
+    required: ["title", "description", "category", "imageUrl", "projectUrl"],
+    properties: {
+      title: { type: "string", description: "Title of the project" },
+      description: { type: "string", description: "Detailed description of the project" },
+      category: { type: "string", description: "Category of the project (e.g., Web Development, Mobile App)" },
+      imageUrl: { type: "string", description: "URL of the project image" },
+      projectUrl: { type: "string", description: "URL to the live project or repository" },
+      active: { type: "boolean", description: "Whether the project is active or not" }
+    }
+  };
 
-/**
- * @swagger
- * /api/projects/category/{category}:
- *   get:
- *     summary: Get projects by category
- *     tags:
- *       - Projects
- *     parameters:
- *       - in: path
- *         name: category
- *         schema:
- *           type: string
- *         required: true
- *         description: Category of projects to retrieve
- *     responses:
- *       200:
- *         description: Successfully retrieved projects by category
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   _id:
- *                     type: string
- *                   title:
- *                     type: string
- *                   description:
- *                     type: string
- *                   category:
- *                     type: string
- *                   imageUrl:
- *                     type: string
- *                   projectUrl:
- *                     type: string
- *                   active:
- *                     type: boolean
- *       404:
- *         description: No projects found for the given category
- *       500:
- *         description: Server error
- */
-// @route GET /api/projects/category/:category
-// @desc Get projects by category
-// @access Public
-router.get("/category/:category", getProjectsByCategory);
+  // GET /api/projects
+  fastify.get("/", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Get all active projects",
+      description: "Retrieve all active projects in the portfolio",
+      response: {
+        200: {
+          description: "Successfully retrieved all projects",
+          type: "array",
+          items: projectSchema
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await getProjects(request, reply);
+  });
 
-/**
- * @swagger
- * /api/projects/{id}:
- *   get:
- *     summary: Get a single project by ID
- *     tags:
- *       - Projects
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: ID of the project to retrieve
- *     responses:
- *       200:
- *         description: Successfully retrieved project information
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 _id:
- *                   type: string
- *                 title:
- *                   type: string
- *                 description:
- *                   type: string
- *                 category:
- *                   type: string
- *                 imageUrl:
- *                   type: string
- *                 projectUrl:
- *                   type: string
- *                 active:
- *                   type: boolean
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
- */
-// @route GET /api/projects/:id
-// @desc Get a single project by ID
-// @access Public
-router.get("/:id", getProjectById);
+  // GET /api/projects/category/:category
+  fastify.get("/category/:category", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Get projects by category",
+      description: "Retrieve projects filtered by category",
+      params: {
+        type: "object",
+        properties: {
+          category: { type: "string", description: "Category of projects to retrieve" }
+        },
+        required: ["category"]
+      },
+      response: {
+        200: {
+          description: "Successfully retrieved projects by category",
+          type: "array",
+          items: projectSchema
+        },
+        404: {
+          description: "No projects found for the given category",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await getProjectsByCategory(request, reply);
+  });
 
-/**
- * @swagger
- * /api/projects:
- *   post:
- *     summary: Create a new project
- *     tags:
- *       - Projects
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required:
- *               - title
- *               - description
- *               - category
- *               - imageUrl
- *               - projectUrl
- *             properties:
- *               title:
- *                 type: string
- *                 description: Title of the project
- *               description:
- *                 type: string
- *                 description: Detailed description of the project
- *               category:
- *                 type: string
- *                 description: Category of the project (e.g., Web Development, Mobile App)
- *               imageUrl:
- *                 type: string
- *                 description: URL of the project image
- *               projectUrl:
- *                 type: string
- *                 description: URL to the live project or repository
- *               active:
- *                 type: boolean
- *                 description: Whether the project is active or not
- *             example:
- *               title: "My Awesome Portfolio Website"
- *               description: "A personal portfolio website built with React and Node.js."
- *               category: "Web Development"
- *               imageUrl: "https://example.com/portfolio.jpg"
- *               projectUrl: "https://myportfolio.com"
- *               active: true
- *     responses:
- *       201:
- *         description: Project created successfully
- *       400:
- *         description: Invalid input
- *       500:
- *         description: Server error
- */
-// @route POST /api/projects
-// @desc Create a new project
-// @access Private (admin only, implement authentication later)
-router.post("/", createProject);
+  // GET /api/projects/:id
+  fastify.get("/:id", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Get a single project by ID",
+      description: "Retrieve a specific project by its ID",
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID of the project to retrieve" }
+        },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          description: "Successfully retrieved project information",
+          ...projectSchema
+        },
+        404: {
+          description: "Project not found",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await getProjectById(request, reply);
+  });
 
-/**
- * @swagger
- * /api/projects/{id}:
- *   put:
- *     summary: Update a project by ID
- *     tags:
- *       - Projects
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: ID of the project to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *               description:
- *                 type: string
- *               category:
- *                 type: string
- *               imageUrl:
- *                 type: string
- *               projectUrl:
- *                 type: string
- *               active:
- *                 type: boolean
- *             example:
- *               title: "Updated Portfolio Website"
- *               description: "An updated personal portfolio website with new features."
- *               category: "Web Development"
- *               imageUrl: "https://example.com/updated_portfolio.jpg"
- *               projectUrl: "https://myupdatedportfolio.com"
- *               active: true
- *     responses:
- *       200:
- *         description: Project updated successfully
- *       400:
- *         description: Invalid input
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
- */
-// @route PUT /api/projects/:id
-// @desc Update a project
-// @access Private (admin only, implement authentication later)
-router.put("/:id", updateProject);
+  // POST /api/projects
+  fastify.post("/", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Create a new project",
+      description: "Create a new project in the portfolio",
+      body: projectInputSchema,
+      response: {
+        201: {
+          description: "Project created successfully",
+          ...projectSchema
+        },
+        400: {
+          description: "Invalid input",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await createProject(request, reply);
+  });
 
-/**
- * @swagger
- * /api/projects/{id}:
- *   delete:
- *     summary: Delete a project by ID
- *     tags:
- *       - Projects
- *     parameters:
- *       - in: path
- *         name: id
- *         schema:
- *           type: string
- *         required: true
- *         description: ID of the project to delete
- *     responses:
- *       200:
- *         description: Project deleted successfully
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
- */
-// @route DELETE /api/projects/:id
-// @desc Delete a project
-// @access Private (admin only, implement authentication later)
-router.delete("/:id", deleteProject);
+  // PUT /api/projects/:id
+  fastify.put("/:id", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Update a project by ID",
+      description: "Update an existing project by its ID",
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID of the project to update" }
+        },
+        required: ["id"]
+      },
+      body: {
+        type: "object",
+        properties: projectInputSchema.properties
+      },
+      response: {
+        200: {
+          description: "Project updated successfully",
+          ...projectSchema
+        },
+        400: {
+          description: "Invalid input",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        404: {
+          description: "Project not found",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await updateProject(request, reply);
+  });
 
-module.exports = router;
+  // DELETE /api/projects/:id
+  fastify.delete("/:id", {
+    schema: {
+      tags: ["Projects"],
+      summary: "Delete a project by ID",
+      description: "Delete a project from the portfolio",
+      params: {
+        type: "object",
+        properties: {
+          id: { type: "string", description: "ID of the project to delete" }
+        },
+        required: ["id"]
+      },
+      response: {
+        200: {
+          description: "Project deleted successfully",
+          type: "object",
+          properties: {
+            message: { type: "string" }
+          }
+        },
+        404: {
+          description: "Project not found",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        },
+        500: {
+          description: "Server error",
+          type: "object",
+          properties: {
+            error: { type: "string" }
+          }
+        }
+      }
+    }
+  }, async (request, reply) => {
+    return await deleteProject(request, reply);
+  });
+}
 
+module.exports = projectRoutes;
 
