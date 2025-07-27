@@ -1,88 +1,45 @@
-/**
- * @file routes/profileRoutes.js
- * @description Fastify routes for profile-related endpoints.
- * Defines API routes for profile management.
- * @author Bruno Paulon
- * @version 1.0.0
- */
+const {
+  getProjects,
+  getProjectById,
+  getProjectsByCategory,
+  createProject,
+  updateProject,
+  deleteProject
+} = require("../controllers/projectController");
 
-const { getProfile, createOrUpdateProfile } = require("../controllers/profileController");
-
-async function profileRoutes(fastify, options) {
-  // Schema definitions for Swagger
-  const profileSchema = {
+async function projectRoutes(fastify, opts) {
+  const projectSchema = {
     type: "object",
     properties: {
-      name: { type: "string" },
+      _id: { type: "string" },
       title: { type: "string" },
-      bio: { type: "string" },
-      contactEmail: { type: "string" },
-      linkedin: { type: "string" },
-      github: { type: "string" }
+      description: { type: "string" },
+      category: { type: "string" },
+      imageUrl: { type: "string" },
+      projectUrl: { type: "string" },
+      isActive: { type: "boolean" }
     }
   };
 
-  // GET /api/profile
-  fastify.get("/", {
-    schema: {
-      tags: ["Profile"],
-      summary: "Get profile information",
-      description: "Retrieve user profile information",
-      response: {
-        200: {
-          description: "Successfully retrieved profile information",
-          type: "object",
-          properties: profileSchema.properties
-        },
-        404: {
-          description: "Profile not found",
-          type: "object",
-          properties: {
-            error: { type: "string" }
-          }
-        },
-        500: {
-          description: "Server error",
-          type: "object",
-          properties: {
-            error: { type: "string" }
-          }
-        }
-      }
+  const projectInput = {
+    type: "object",
+    required: ["title", "description", "category", "imageUrl", "projectUrl"],
+    properties: {
+      title: { type: "string" },
+      description: { type: "string" },
+      category: { type: "string" },
+      imageUrl: { type: "string" },
+      projectUrl: { type: "string" },
+      isActive: { type: "boolean" }
     }
-  }, async (request, reply) => {
-    return await getProfile(request, reply);
-  });
+  };
 
-  // POST /api/profile
-  fastify.post("/", {
-    schema: {
-      tags: ["Profile"],
-      summary: "Create or update profile information",
-      description: "Create or update user profile information",
-      body: {
-        type: "object",
-        properties: profileSchema.properties
-      },
-      response: {
-        200: {
-          description: "Profile created or updated successfully",
-          type: "object",
-          properties: profileSchema.properties
-        },
-        500: {
-          description: "Server error",
-          type: "object",
-          properties: {
-            error: { type: "string" }
-          }
-        }
-      }
-    }
-  }, async (request, reply) => {
-    return await createOrUpdateProfile(request, reply);
-  });
+  fastify.get("/", { schema: { tags: ["Projects"], summary: "Listar projetos", response: { 200: { type: "array", items: projectSchema } } } }, getProjects);
+  fastify.get("/:id", { schema: { tags: ["Projects"], summary: "Obter por ID", params: { type: "object", properties: { id: { type: "string" } } }, response: { 200: projectSchema, 404: { type: "object", properties: { error: { type: "string" } } } } } }, getProjectById);
+  fastify.get("/category/:category", { schema: { tags: ["Projects"], summary: "Filtrar por categoria", params: { type: "object", properties: { category: { type: "string" } } }, response: { 200: { type: "array", items: projectSchema } } } }, getProjectsByCategory);
+  fastify.post("/", { schema: { tags: ["Projects"], summary: "Criar projeto", body: projectInput, response: { 201: projectSchema } } }, createProject);
+  fastify.put("/:id", { schema: { tags: ["Projects"], summary: "Atualizar projeto", params: { type: "object", properties: { id: { type: "string" } } }, body: projectInput, response: { 200: projectSchema, 404: { type: "object", properties: { error: { type: "string" } } } } } }, updateProject);
+  fastify.delete("/:id", { schema: { tags: ["Projects"], summary: "Excluir projeto", params: { type: "object", properties: { id: { type: "string" } } }, response: { 200: { type: "object", properties: { message: { type: "string" } } } } } }, deleteProject);
 }
 
-module.exports = profileRoutes;
-
+module.exports = projectRoutes;
