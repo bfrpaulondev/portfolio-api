@@ -1,106 +1,73 @@
 /**
  * @file api/index.js
- * @description Vercel serverless function entry point for the Portfolio API.
+ * @description Vercel serverless function entry point using Fastify for Bruno Paulon's Portfolio API.
  * @author Bruno Paulon
- * @version 1.0.0
+ * @version 2.0.0
  */
 
-require("dotenv").config(); // Load environment variables from .env file
-const express = require("express");
+const fastify = require("fastify")({ logger: false });
 const mongoose = require("mongoose");
-const cors = require("cors");
-const path = require("path");
+const cors = require("@fastify/cors");
+const swagger = require("@fastify/swagger");
+const swaggerUI = require("@fastify/swagger-ui");
+require("dotenv").config();
 
-// Swagger Documentation Setup
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
-
-// Import configuration
-const dbConfig = require("../config/db.config");
-
-const app = express();
-
-// Import Routes
-const profileRoutes = require("../routes/profileRoutes");
-const serviceRoutes = require("../routes/serviceRoutes");
-const projectRoutes = require("../routes/projectRoutes");
-const technologyRoutes = require("../routes/technologyRoutes");
-const contactRoutes = require("../routes/contactRoutes");
-
-// Middleware
-app.use(express.json()); // Parse JSON request bodies
-app.use(cors()); // Enable Cross-Origin Resource Sharing
-
-// Use Routes
-app.use("/api/profile", profileRoutes);
-app.use("/api/services", serviceRoutes);
-app.use("/api/projects", projectRoutes);
-app.use("/api/technologies", technologyRoutes);
-app.use("/api/contact", contactRoutes);
-
-// Database Connection
-mongoose.connect(dbConfig.mongoURI, {
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
+  useUnifiedTopology: true
 })
-.then(() => console.log("MongoDB connected successfully."))
-.catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("MongoDB connected."))
+  .catch((err) => console.error("MongoDB connection error:", err));
 
-const swaggerOptions = {
-  swaggerDefinition: {
-    openapi: "3.0.0",
+// Register middleware
+fastify.register(cors, { origin: "*" });
+
+// Register Swagger
+fastify.register(swagger, {
+  swagger: {
     info: {
       title: "Portfolio API Documentation",
-      version: "1.0.0",
-      description: "API documentation for Bruno Paulon's Portfolio project.",
+      version: "2.0.0",
+      description: "API para o portfólio de Bruno Paulon",
       contact: {
         name: "Bruno Paulon",
-        email: "bfrpaulondev@gmail.com",
-      },
+        email: "bfrpaulondev@gmail.com"
+      }
     },
-    servers: [
-      {
-        url: "https://portfolio-api-nine-tau.vercel.app",
-        description: "Production server",
-      },
-    ],
-  },
-  apis: ["../routes/*.js", "../controllers/*.js"], // Path to the API docs
-};
-
-const swaggerDocs = swaggerJsdoc(swaggerOptions);
-
-// Swagger UI configuration for Vercel
-const swaggerUiOptions = {
-  explorer: true,
-  swaggerOptions: {
-    url: null,
-    spec: swaggerDocs,
-  },
-};
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocs, {
-  explorer: true,
-  customCssUrl: "/swagger-ui-dist/swagger-ui.css",
-  customJs: "/swagger-ui-dist/swagger-ui-bundle.js",
-  customJsStr: "/swagger-ui-dist/swagger-ui-standalone-preset.js"
-}));
-
-
-
-// Basic route for API root
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Welcome to Bruno Paulon's Portfolio API!",
-    version: "1.0.0",
-    documentation: "https://portfolio-api-nine-tau.vercel.app/api-docs",
-  });
+    host: "localhost",
+    schemes: ["https"],
+    consumes: ["application/json"],
+    produces: ["application/json"]
+  }
 });
 
-// Error handling middleware (optional, but good practice)
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).send("Something broke!");
+fastify.register(swaggerUI, {
+  routePrefix: "/api-docs",
+  uiConfig: {
+    docExpansion: "full",
+    deepLinking: false
+  }
 });
 
-module.exports = app;
+// Register routes
+fastify.register(require("../routes/profileRoutes"), { prefix: "/api/profile" });
+fastify.register(require("../routes/serviceRoutes"), { prefix: "/api/services" });
+fastify.register(require("../routes/projectRoutes"), { prefix: "/api/projects" });
+fastify.register(require("../routes/technologyRoutes"), { prefix: "/api/technologies" });
+fastify.register(require("../routes/contactRoutes"), { prefix: "/api/contact" });
 
+// Root Route
+fastify.get("/", async (request, reply) => {
+  return {
+    message: "Welcome to Bruno Paulon's Portfolio API (Fastify Version)!",
+    version: "2.0.0",
+    documentation: "/api-docs"
+  };
+});
+
+// Export handler for Vercel
+module.exports = async (req, res) => {
+  await fastify.ready();
+  fastify.server.emit("request", req, res);
+};
